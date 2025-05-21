@@ -71,7 +71,7 @@ contract DigitalAuction {
             require(currentBid >= auction.startingPrice, "Bid must be at least the starting price");
         } else {
             require(currentBid > auction.highestBid, "Bid must be higher than current highest bid");
-            auction.highestBidder.transfer(auction.highestBid); // refund previous bidder
+            auction.highestBidder.transfer(auction.highestBid); // Refund previous highest bidder
         }
 
         auction.highestBid = currentBid;
@@ -109,4 +109,6 @@ contract DigitalAuction {
         auction.cancelled = true;
         auction.ended = true;
 
-        emit AuctionCancelled(
+        emit AuctionCancelled(_auctionId);
+    }
+}
