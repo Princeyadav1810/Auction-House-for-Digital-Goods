@@ -21,6 +21,7 @@ contract DigitalAuction {
 
     mapping(uint256 => Auction) public auctions;
     mapping(address => uint256[]) public userBids;
+    mapping(address => uint256) public pendingReturns; // NEW: tracks refundable bids
     uint256 public auctionCounter;
 
     // Events
@@ -28,6 +29,7 @@ contract DigitalAuction {
     event BidPlaced(uint256 indexed auctionId, address indexed bidder, uint256 amount);
     event AuctionEnded(uint256 indexed auctionId, address indexed winner, uint256 amount);
     event AuctionCancelled(uint256 indexed auctionId);
+    event BidWithdrawn(address indexed bidder, uint256 amount); // NEW event
 
     function createAuction(
         string memory _digitalItemURI,
@@ -71,7 +73,8 @@ contract DigitalAuction {
             require(currentBid >= auction.startingPrice, "Bid must be at least the starting price");
         } else {
             require(currentBid > auction.highestBid, "Bid must be higher than current highest bid");
-            auction.highestBidder.transfer(auction.highestBid); // Refund previous highest bidder
+            // Instead of immediately refunding, add to pendingReturns for safe withdrawal
+            pendingReturns[auction.highestBidder] += auction.highestBid;
         }
 
         auction.highestBid = currentBid;
@@ -110,5 +113,19 @@ contract DigitalAuction {
         auction.ended = true;
 
         emit AuctionCancelled(_auctionId);
+    }
+
+    // NEW FUNCTION: Withdraw previous bids safely
+    function withdrawBid() external {
+        uint256 amount = pendingReturns[msg.sender];
+        require(amount > 0, "No funds to withdraw");
+
+        // Reset before transfer to prevent re-entrancy
+        pendingReturns[msg.sender] = 0;
+
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Withdraw failed");
+
+        emit BidWithdrawn(msg.sender, amount);
     }
 }
