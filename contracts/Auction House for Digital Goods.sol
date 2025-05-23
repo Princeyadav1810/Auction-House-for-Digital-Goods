@@ -8,7 +8,7 @@ pragma solidity ^0.8.17;
 contract DigitalAuction {
     struct Auction {
         uint256 id;
-        address payable seller;
+        address payable seller
         string digitalItemURI;
         string digitalItemDescription;
         uint256 startingPrice;
@@ -29,7 +29,7 @@ contract DigitalAuction {
     event BidPlaced(uint256 indexed auctionId, address indexed bidder, uint256 amount);
     event AuctionEnded(uint256 indexed auctionId, address indexed winner, uint256 amount);
     event AuctionCancelled(uint256 indexed auctionId);
-    event BidWithdrawn(address indexed bidder, uint256 amount); // NEW event
+    event BidWithdrawn(address indexed bidder, uint256 amount); // NEW even
 
     function createAuction(
         string memory _digitalItemURI,
