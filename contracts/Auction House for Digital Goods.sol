@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 /**
  * @title DigitalAuction
- * @dev Smart contract for auctioning digital goods
+ * @dev Smart contract for auctioning digital good
  */
 contract DigitalAuction {
     struct Auction {
