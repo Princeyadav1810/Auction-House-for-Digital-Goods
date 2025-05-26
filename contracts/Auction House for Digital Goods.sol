@@ -6,7 +6,7 @@ pragma solidity ^0.8.17;
  * @dev Smart contract for auctioning digital go
  */
 contract DigitalAuction {
-    struct Auction {
+    struct Auction {\
         uint256 id;
         address payable seller
         string digitalItemURI;
