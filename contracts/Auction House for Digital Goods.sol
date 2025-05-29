@@ -8,7 +8,7 @@ pragma solidity ^0.8.17;
 contract DigitalAuction {
     struct Auction {
         uint256 id;
-        address payable seller;
+        address payable selle
         string digitalItemURI;
         string digitalItemDescription;
         uint256 startingPrice;
