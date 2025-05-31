@@ -8,7 +8,7 @@ pragma solidity ^0.8.17;
 contract DigitalAuction {
     struct Auction {
         uint256 id;
-        address payable selle
+        address payable seller;
         string digitalItemURI;
         string digitalItemDescription;
         uint256 startingPrice;
@@ -25,12 +25,21 @@ contract DigitalAuction {
     uint256 public auctionCounter;
 
     // Events
-    event AuctionCreated(uint256 indexed auctionId, address indexed seller, string digitalItemURI, uint256 startingPrice, uint256 endTime);
+    event AuctionCreated(
+        uint256 indexed auctionId,
+        address indexed seller,
+        string digitalItemURI,
+        uint256 startingPrice,
+        uint256 endTime
+    );
     event BidPlaced(uint256 indexed auctionId, address indexed bidder, uint256 amount);
     event AuctionEnded(uint256 indexed auctionId, address indexed winner, uint256 amount);
     event AuctionCancelled(uint256 indexed auctionId);
     event BidWithdrawn(address indexed bidder, uint256 amount);
 
+    /**
+     * @dev Create a new auction
+     */
     function createAuction(
         string memory _digitalItemURI,
         string memory _digitalItemDescription,
@@ -59,6 +68,9 @@ contract DigitalAuction {
         emit AuctionCreated(auctionId, msg.sender, _digitalItemURI, _startingPrice, endTime);
     }
 
+    /**
+     * @dev Place a bid on an auction
+     */
     function placeBid(uint256 _auctionId) external payable {
         Auction storage auction = auctions[_auctionId];
 
@@ -66,6 +78,7 @@ contract DigitalAuction {
         require(!auction.ended, "Auction already finalized");
         require(!auction.cancelled, "Auction has been cancelled");
         require(msg.sender != auction.seller, "Seller cannot bid on their own auction");
+        require(msg.value > 0, "Must send ETH to place a bid");
 
         uint256 currentBid = msg.value;
 
@@ -73,7 +86,7 @@ contract DigitalAuction {
             require(currentBid >= auction.startingPrice, "Bid must be at least the starting price");
         } else {
             require(currentBid > auction.highestBid, "Bid must be higher than current highest bid");
-            // Instead of immediately refunding, add to pendingReturns for safe withdrawal
+            // Refund the previous highest bidder
             pendingReturns[auction.highestBidder] += auction.highestBid;
         }
 
@@ -84,13 +97,19 @@ contract DigitalAuction {
         emit BidPlaced(_auctionId, msg.sender, currentBid);
     }
 
+    /**
+     * @dev End an auction and transfer funds to seller
+     */
     function endAuction(uint256 _auctionId) external {
         Auction storage auction = auctions[_auctionId];
 
         require(block.timestamp >= auction.endTime, "Auction has not ended yet");
         require(!auction.ended, "Auction already finalized");
         require(!auction.cancelled, "Auction has been cancelled");
-        require(msg.sender == auction.seller || msg.sender == auction.highestBidder, "Only seller or highest bidder can end auction");
+        require(
+            msg.sender == auction.seller || msg.sender == auction.highestBidder,
+            "Only seller or highest bidder can end auction"
+        );
 
         auction.ended = true;
 
@@ -102,6 +121,9 @@ contract DigitalAuction {
         }
     }
 
+    /**
+     * @dev Cancel an auction (only before bids are placed)
+     */
     function cancelAuction(uint256 _auctionId) external {
         Auction storage auction = auctions[_auctionId];
 
@@ -115,12 +137,14 @@ contract DigitalAuction {
         emit AuctionCancelled(_auctionId);
     }
 
-    // NEW: Withdraw previous bids safely
+    /**
+     * @dev Withdraw previously outbid funds
+     */
     function withdrawBid() external {
         uint256 amount = pendingReturns[msg.sender];
         require(amount > 0, "No funds to withdraw");
 
-        // Reset before transfer to prevent re-entrancy
+        // Prevent re-entrancy
         pendingReturns[msg.sender] = 0;
 
         (bool success, ) = payable(msg.sender).call{value: amount}("");
@@ -129,7 +153,9 @@ contract DigitalAuction {
         emit BidWithdrawn(msg.sender, amount);
     }
 
-    // NEW: View auction details by ID
+    /**
+     * @dev View auction details
+     */
     function getAuctionDetails(uint256 _auctionId) external view returns (
         address seller,
         string memory uri,
@@ -155,12 +181,16 @@ contract DigitalAuction {
         );
     }
 
-    // NEW: View all auctions a user has bid on
+    /**
+     * @dev View all auction IDs a user has participated in
+     */
     function getUserBids(address user) external view returns (uint256[] memory) {
         return userBids[user];
     }
 
-    // NEW: Get contract balance (total ETH held)
+    /**
+     * @dev View contract's ETH balance
+     */
     function getContractBalance() external view returns (uint256) {
         return address(this).balance;
     }
